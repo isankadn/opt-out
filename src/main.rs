@@ -41,7 +41,6 @@ async fn auth(
         if let Ok(cookie_str) = cookie.to_str() {
             if let Some(session_cookie) = cookie_str.strip_prefix("session=") {
                 if let Ok(session) = serde_json::from_str::<Session>(session_cookie) {
-                    // Retrieve the user from the database based on the user ID stored in the session
                     match sqlx::query_as!(
                         StoredUser,
                         r#"
@@ -56,16 +55,13 @@ async fn auth(
                     {
                         Ok(user) => match user {
                             Some(_) => {
-                                // User exists, so the session is valid
                                 return Ok(next.run(request).await);
                             }
                             None => {
-                                // User not found, session is invalid
                                 return Err(StatusCode::UNAUTHORIZED);
                             }
                         },
                         Err(_) => {
-                            // Database error
                             return Err(StatusCode::INTERNAL_SERVER_ERROR);
                         }
                     }
@@ -174,14 +170,14 @@ struct OptOutForm {
     opt_out: bool,
 }
 
-// Handler for the opt-out users page
+
 async fn opt_out_users_page(
     Extension(pool): Extension<PgPool>,
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> impl IntoResponse {
     let token = params.get("token").cloned().unwrap_or_default();
 
-    // Retrieve the list of opt-out users from the database
+
     match sqlx::query_as!(
         OptOutForm,
         r#"
@@ -233,7 +229,7 @@ async fn opt_out_users_page(
     }
 }
 
-// Handler for the add opt-out user page
+
 async fn add_opt_out_user_page(
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> impl IntoResponse {
@@ -252,7 +248,7 @@ async fn add_opt_out_user_page(
     }
 }
 
-// Handler for the edit opt-out user page
+
 async fn edit_opt_out_user_page(
     axum::extract::Path(id): axum::extract::Path<i32>,
     Extension(pool): Extension<PgPool>,
@@ -260,7 +256,7 @@ async fn edit_opt_out_user_page(
 ) -> impl IntoResponse {
     let token = params.get("token").cloned().unwrap_or_default();
 
-    // Retrieve the opt-out user from the database
+
     match sqlx::query_as!(
         OptOutForm,
         r#"
@@ -300,7 +296,7 @@ async fn edit_opt_out_user_page(
     }
 }
 
-// Handler for the opt-out form submission
+
 async fn opt_out(
     Extension(pool): Extension<PgPool>,
     Form(form): Form<OptOutForm>,
@@ -308,7 +304,6 @@ async fn opt_out(
 ) -> Response {
     let token = params.get("token").cloned().unwrap_or_default();
 
-    // Validate the form fields
     if form.user_id.is_empty() || form.school.is_empty() {
         return (
             axum::http::StatusCode::BAD_REQUEST,
@@ -317,9 +312,9 @@ async fn opt_out(
             .into_response();
     }
 
-    // Store the form data in the database
+
     let result = if form.id != 0 {
-        // Update existing opt-out user
+  
         sqlx::query!(
             r#"
             UPDATE opt_out
@@ -334,7 +329,7 @@ async fn opt_out(
         .execute(&pool)
         .await
     } else {
-        // Add new opt-out user
+
         sqlx::query!(
             r#"
             INSERT INTO opt_out (user_id, school, opt_out)
@@ -350,14 +345,14 @@ async fn opt_out(
 
     match result {
         Ok(_) => {
-            // Redirect back to the opt-out users page
+  
             Redirect::to(&format!("/opt-out-users?token={}", token)).into_response()
         }
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Database error").into_response(),
     }
 }
 
-// Handler for deleting an opt-out user
+
 async fn delete_opt_out_user(
     axum::extract::Path(id): axum::extract::Path<i32>,
     Extension(pool): Extension<PgPool>,
@@ -365,7 +360,7 @@ async fn delete_opt_out_user(
 ) -> impl IntoResponse {
     let token = params.get("token").cloned().unwrap_or_default();
 
-    // Delete the opt-out user from the database
+
     match sqlx::query!(
         r#"
         DELETE FROM opt_out
@@ -420,7 +415,7 @@ async fn logout(jar: CookieJar) -> impl IntoResponse {
 async fn main() {
     dotenv().ok();
     env_logger::init();
-    // Set up the database connection pool
+
     let data_base = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let pool = match PgPoolOptions::new()
         .max_connections(5)
@@ -434,7 +429,7 @@ async fn main() {
         }
     };
 
-    // Run the database migrations
+
     match sqlx::migrate!("./migrations").run(&pool).await {
         Ok(_) => println!("Database migrations applied successfully"),
         Err(err) => {
@@ -443,7 +438,7 @@ async fn main() {
         }
     }
     let secret_key = Key::generate();
-    // Create the Axum router
+
     let app = Router::new()
         .route("/", get(login_page).post(login))
         .route("/logout", post(logout))

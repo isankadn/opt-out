@@ -11,3 +11,7 @@ password-hash = "0.4"
 dotenv="0.15.0"
 env_logger = "0.11.3"
 log="*"
+
+[[bin]]
+name = "admin"
+path = "src/main.rs"

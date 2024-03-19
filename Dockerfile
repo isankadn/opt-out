@@ -10,7 +10,8 @@ COPY .env .
 COPY migrations ./migrations
 
 ENV RUSTFLAGS="-C target-cpu=native"
-
+RUN cargo install sqlx-cli
+RUN sqlx migrate run  
 RUN cargo build --release
 
 # Production Stage

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Opt-Out User</title>
+</head>
+<body>
+    <h1>Add Opt-Out User</h1>
+    <form action="/opt-out?token={{token}}" method="post">
+        <label for="user_id">User ID:</label>
+        <input type="text" id="user_id" name="user_id" required><br>
+        <label for="school">School:</label>
+        <input type="text" id="school" name="school" required><br>
+        <label for="opt_out">Opt-Out:</label>
+        <input type="checkbox" id="opt_out" name="opt_out"><br>
+        <input type="submit" value="Add">
+    </form>
+</body>
+</html>

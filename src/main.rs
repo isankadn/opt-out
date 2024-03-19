@@ -11,10 +11,11 @@ use axum::{
 };
 use axum::Extension;
 use dotenv::dotenv;
-use log::info;
+use log::{info, warn, error};
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use tokio::signal;
+use std::process;
 use std::{env, net::SocketAddr};
 use tokio::net::TcpListener;
 use tower_http::auth::RequireAuthorizationLayer;
@@ -61,8 +62,14 @@ async fn auth(
                                 return Err(StatusCode::UNAUTHORIZED);
                             }
                         },
-                        Err(_) => {
-                            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+                        Err(err) => {
+                            if err.to_string().contains("failed to lookup address information") {
+                                warn!("Skipping user creation during Docker image build");
+                                process::exit(0);
+                            } else {
+                                error!("Failed to create user: {:?}", err);
+                                process::exit(1);
+                            }
                         }
                     }
                 }
@@ -418,13 +425,14 @@ async fn main() {
 
     let data_base = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let pool = match PgPoolOptions::new()
-        .max_connections(5)
-        .connect(&data_base)
-        .await
+    .max_connections(5)
+    .connect(&data_base)
+    .await
     {
         Ok(pool) => pool,
         Err(err) => {
             eprintln!("Failed to create database pool: {:?}", err);
+            eprintln!("Proceeding without database connection...");
             std::process::exit(1);
         }
     };

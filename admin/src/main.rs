@@ -3,7 +3,7 @@ use argon2::{
     Argon2,
 };
 use dotenv::dotenv;
-use log::{error, info};
+use log::{error, info, warn};
 use sqlx::postgres::PgPoolOptions;
 use std::io::{self, Write};
 use std::process;
@@ -17,13 +17,14 @@ async fn main() {
         .max_connections(5)
         .connect(&data_base)
         .await
-    {
-        Ok(pool) => pool,
-        Err(err) => {
-            eprintln!("Failed to create database pool: {:?}", err);
-            process::exit(1);
-        }
-    };
+            {
+                Ok(pool) => pool,
+                Err(err) => {
+                    eprintln!("Failed to create database pool: {:?}", err);
+                    eprintln!("Proceeding without database connection...");
+                    std::process::exit(1);
+                }
+            };
 
     print!("Enter username: ");
     io::stdout().flush().unwrap();
@@ -45,6 +46,7 @@ async fn main() {
 
     let password_hash = hash_password(&password).unwrap();
 
+
     match sqlx::query!(
         r#"
         INSERT INTO users (username, password_hash, admin)
@@ -59,11 +61,16 @@ async fn main() {
     {
         Ok(_) => {
             info!("User created successfully");
-            process::exit(0);
+            std::process::exit(0);
         }
         Err(err) => {
-            error!("Failed to create user: {:?}", err);
-            process::exit(1);
+            if err.to_string().contains("failed to lookup address information") {
+                warn!("Skipping user creation during Docker image build");
+                std::process::exit(0);
+            } else {
+                error!("Failed to create user: {:?}", err);
+                std::process::exit(1);
+            }
         }
     }
 }

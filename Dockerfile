@@ -19,6 +19,7 @@ FROM rust:slim
 WORKDIR /app
 
 COPY --from=builder /app/target/release/leaf-opt-out .
+COPY --from=builder /app/target/release/admin .
 COPY --from=builder /app/.env .
 COPY --from=builder /app/migrations ./migrations
 

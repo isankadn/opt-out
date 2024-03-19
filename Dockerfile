@@ -24,7 +24,8 @@ COPY --from=builder /app/target/release/admin .
 COPY --from=builder /app/.env .
 COPY --from=builder /app/migrations ./migrations
 
-ENV RUST_ENV=production
+ENV RUST_ENV=prod
+ENV RUST_LOG=info
 ENV RUSTFLAGS="-C target-cpu=native"
 
 CMD ["./leaf-opt-out"]

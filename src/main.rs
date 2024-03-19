@@ -423,10 +423,20 @@ async fn main() {
     dotenv().ok();
     env_logger::init();
 
-    let data_base = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let postgres_user = env::var("POSTGRES_USER").expect("POSTGRES_USER must be set");
+    let postgres_password = env::var("POSTGRES_PASSWORD").expect("POSTGRES_PASSWORD must be set");
+    let postgres_db = env::var("POSTGRES_DB").expect("POSTGRES_DB must be set");
+    let postgres_host = env::var("POSTGRES_HOST").expect("POSTGRES_HOST must be set");
+    let postgres_port = env::var("POSTGRES_PORT").expect("POSTGRES_PORT must be set");
+
+    let database_url = format!(
+        "postgres://{}:{}@{}:{}/{}",
+        postgres_user, postgres_password, postgres_host, postgres_port, postgres_db
+    );
+    println!("data_base {:?}", database_url);
     let pool = match PgPoolOptions::new()
     .max_connections(5)
-    .connect(&data_base)
+    .connect(&database_url)
     .await
     {
         Ok(pool) => pool,

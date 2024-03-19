@@ -13,6 +13,7 @@ async fn main() {
     dotenv().ok();
 
     let data_base = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    println!("data_base {:?}", data_base);
     let pool = match PgPoolOptions::new()
         .max_connections(5)
         .connect(&data_base)
